@@ -1,0 +1,10 @@
+node_modules
+.next
+.data
+services/pipeline/.venv
+services/pipeline/.cache
+services/pipeline/data/generated
+apps/web/server/db/generated
+prisma/migrations
+backend
+frontend

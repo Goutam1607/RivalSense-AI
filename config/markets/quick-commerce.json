@@ -1,0 +1,362 @@
+{
+  "$comment": "Market definition shared by the seed script (TypeScript) and the NLP pipeline (Python). Aspect categories are stored in the aspect_category table per market; this file is only the starting point.",
+  "aspects": [
+    {
+      "key": "delivery_speed",
+      "label": "Delivery speed",
+      "query": "delivery",
+      "description": "How fast or slow the order arrived, delivery time, late or delayed orders, waiting for the rider, quick arrival within minutes.",
+      "seedKeywords": [
+        "fast delivery",
+        "quick delivery",
+        "slow delivery",
+        "late delivery",
+        "delivered in",
+        "delivered within",
+        "arrived in",
+        "arrived within",
+        "on time",
+        "delayed",
+        "delay",
+        "late",
+        "took forever",
+        "took long",
+        "eta",
+        "superfast",
+        "super fast",
+        "minutes delivery",
+        "minute delivery",
+        "lightning fast",
+        "waiting time",
+        "delivery time",
+        "delivery was fast",
+        "delivery was quick",
+        "delivery is fast",
+        "delivery is quick",
+        "minutes",
+        "mins",
+        "min delivery",
+        "arrived",
+        "reached",
+        "came late",
+        "delivered late",
+        "delivery speed",
+        "speed of delivery"
+      ]
+    },
+    {
+      "key": "pricing",
+      "label": "Pricing",
+      "query": "price",
+      "description": "Product prices, expensive or cheap, overpriced compared to MRP or local shops, delivery fees, handling charges, platform fees, surge charges.",
+      "seedKeywords": [
+        "price",
+        "prices",
+        "pricing",
+        "expensive",
+        "costly",
+        "overpriced",
+        "cheap",
+        "cheaper",
+        "affordable",
+        "mrp",
+        "delivery fee",
+        "delivery charge",
+        "delivery charges",
+        "handling fee",
+        "handling charge",
+        "platform fee",
+        "surge",
+        "small cart fee",
+        "rain fee",
+        "value for money"
+      ]
+    },
+    {
+      "key": "discounts_offers",
+      "label": "Discounts & offers",
+      "query": "offers",
+      "description": "Discounts, coupons, cashback, promo codes, deals, membership passes and free delivery offers.",
+      "seedKeywords": [
+        "discount",
+        "discounts",
+        "offer",
+        "offers",
+        "coupon",
+        "coupons",
+        "cashback",
+        "deal",
+        "deals",
+        "promo",
+        "promo code",
+        "membership",
+        "free delivery",
+        "sale",
+        "pass benefits"
+      ]
+    },
+    {
+      "key": "product_availability",
+      "label": "Product availability",
+      "query": "availability",
+      "description": "Whether items are in stock, out of stock products, range and variety of products, finding what you need on the app.",
+      "seedKeywords": [
+        "out of stock",
+        "in stock",
+        "not available",
+        "unavailable",
+        "availability",
+        "stock",
+        "variety",
+        "range of products",
+        "product range",
+        "selection",
+        "options available",
+        "everything available",
+        "sold out",
+        "limited options",
+        "wide range",
+        "available",
+        "out-of-stock",
+        "nothing in stock",
+        "coming soon",
+        "brands",
+        "find",
+        "items i need",
+        "catalogue",
+        "catalog"
+      ]
+    },
+    {
+      "key": "product_quality",
+      "label": "Product quality",
+      "query": "quality",
+      "description": "Freshness and condition of products, rotten vegetables, stale bread, expired items, damaged or leaking packets, good quality fruits.",
+      "seedKeywords": [
+        "quality",
+        "fresh",
+        "freshness",
+        "stale",
+        "rotten",
+        "expired",
+        "expiry",
+        "damaged",
+        "spoiled",
+        "leaking",
+        "leaked",
+        "broken",
+        "crushed",
+        "smelly",
+        "mouldy",
+        "moldy"
+      ]
+    },
+    {
+      "key": "order_accuracy",
+      "label": "Order accuracy",
+      "query": "order",
+      "description": "Wrong items delivered, missing items in the order, incorrect quantity, items swapped with something else, order not matching what was placed.",
+      "seedKeywords": [
+        "wrong item",
+        "wrong items",
+        "wrong product",
+        "missing item",
+        "missing items",
+        "item missing",
+        "items missing",
+        "incorrect item",
+        "wrong quantity",
+        "swapped",
+        "replaced with",
+        "not what i ordered",
+        "different product",
+        "half the order",
+        "everything was correct",
+        "correct items",
+        "missing",
+        "wrong",
+        "instead of",
+        "incomplete order",
+        "exactly what i ordered",
+        "accurate",
+        "accuracy",
+        "complete order",
+        "someone else"
+      ]
+    },
+    {
+      "key": "customer_support",
+      "label": "Customer support",
+      "query": "customer support",
+      "description": "Customer care and support team, chat support, support executives and agents, response time of support, bots that do not help, resolving complaints.",
+      "seedKeywords": [
+        "customer care",
+        "customer support",
+        "customer service",
+        "support",
+        "chat support",
+        "support team",
+        "executive",
+        "agent",
+        "helpline",
+        "call center",
+        "call centre",
+        "no response",
+        "bot",
+        "chatbot",
+        "complaint",
+        "escalate"
+      ]
+    },
+    {
+      "key": "refunds_returns",
+      "label": "Refunds & returns",
+      "query": "refund",
+      "description": "Getting money back, refunds pending or not received, returns and replacements of items, refund to wallet or bank account.",
+      "seedKeywords": [
+        "refund",
+        "refunds",
+        "refunded",
+        "return",
+        "returns",
+        "replacement",
+        "money back",
+        "reimburse",
+        "refund not received",
+        "refund pending",
+        "reversal",
+        "credited back"
+      ]
+    },
+    {
+      "key": "app_experience",
+      "label": "App experience",
+      "query": "app",
+      "description": "The mobile app interface and stability, crashes, bugs, glitches, slow loading screens, login or OTP problems, updates that broke the app, ease of use.",
+      "seedKeywords": [
+        "crash",
+        "crashes",
+        "crashing",
+        "bug",
+        "bugs",
+        "buggy",
+        "glitch",
+        "glitches",
+        "ui",
+        "interface",
+        "laggy",
+        "lag",
+        "hangs",
+        "freezes",
+        "freezing",
+        "login",
+        "otp",
+        "update",
+        "loading",
+        "user friendly",
+        "easy to use",
+        "navigation",
+        "app design",
+        "app is slow",
+        "app keeps",
+        "app crashes",
+        "new version",
+        "latest version",
+        "screen",
+        "tracking",
+        "logs me out",
+        "logged out",
+        "design",
+        "app hangs",
+        "app not working",
+        "app is not working",
+        "app not opening",
+        "app does not work",
+        "app doesn't work"
+      ]
+    },
+    {
+      "key": "payments",
+      "label": "Payments",
+      "query": "payment",
+      "description": "Paying for orders with UPI, cards, wallets or cash on delivery, payment failures, money deducted but order not placed, double charges.",
+      "seedKeywords": [
+        "payment",
+        "payments",
+        "upi",
+        "card",
+        "cod",
+        "cash on delivery",
+        "wallet",
+        "payment failed",
+        "deducted",
+        "debited",
+        "transaction",
+        "double charged",
+        "charged twice",
+        "paytm",
+        "gpay",
+        "phonepe"
+      ]
+    }
+  ],
+  "demo": {
+    "market": {
+      "name": "Quick Commerce (Demo)",
+      "slug": "quick-commerce-demo",
+      "description": "Synthetic reviews for four fictional quick-commerce apps. Used to demonstrate and test the pipeline; contains planted signals documented in docs/DEMO_DATA.md."
+    },
+    "competitors": [
+      {
+        "slug": "dashly",
+        "name": "Dashly",
+        "description": "Fictional 10-minute grocery delivery app (synthetic data)."
+      },
+      {
+        "slug": "kwikr",
+        "name": "Kwikr",
+        "description": "Fictional quick-commerce app with an aggressive offers strategy (synthetic data)."
+      },
+      {
+        "slug": "basketo",
+        "name": "Basketo",
+        "description": "Fictional grocery app with a wide catalogue (synthetic data)."
+      },
+      {
+        "slug": "minutemart",
+        "name": "MinuteMart",
+        "description": "Fictional convenience-store delivery app (synthetic data)."
+      }
+    ]
+  },
+  "live": {
+    "market": {
+      "name": "Quick Commerce (Live data)",
+      "slug": "quick-commerce-live",
+      "description": "Real public Google Play reviews of Indian quick-commerce apps, collected with a small, polite volume cap."
+    },
+    "competitors": [
+      {
+        "slug": "zepto",
+        "name": "Zepto",
+        "googlePlayId": "com.zeptoconsumerapp"
+      },
+      {
+        "slug": "blinkit",
+        "name": "Blinkit",
+        "googlePlayId": "com.grofers.customerapp"
+      },
+      {
+        "slug": "swiggy-instamart",
+        "name": "Swiggy Instamart",
+        "googlePlayId": "in.swiggy.android.instamart",
+        "note": "Standalone 'Instamart: Groceries & more' app by Swiggy (verified on Google Play, Oct 2026). The main Swiggy app (in.swiggy.android) mixes in food-delivery reviews, so it is not used."
+      },
+      {
+        "slug": "bigbasket",
+        "name": "BigBasket",
+        "googlePlayId": "com.bigbasket.mobileapp"
+      }
+    ]
+  }
+}

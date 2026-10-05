@@ -1,0 +1,186 @@
+{
+  "gold": null,
+  "synthetic": {
+    "n": 1500,
+    "model": {
+      "per_aspect": {
+        "delivery_speed": {
+          "precision": 0.947,
+          "recall": 0.834,
+          "f1": 0.887,
+          "support": 429
+        },
+        "pricing": {
+          "precision": 1.0,
+          "recall": 0.813,
+          "f1": 0.897,
+          "support": 225
+        },
+        "discounts_offers": {
+          "precision": 1.0,
+          "recall": 0.92,
+          "f1": 0.958,
+          "support": 150
+        },
+        "product_availability": {
+          "precision": 0.912,
+          "recall": 0.756,
+          "f1": 0.827,
+          "support": 193
+        },
+        "product_quality": {
+          "precision": 0.924,
+          "recall": 0.924,
+          "f1": 0.924,
+          "support": 184
+        },
+        "order_accuracy": {
+          "precision": 0.941,
+          "recall": 0.789,
+          "f1": 0.858,
+          "support": 142
+        },
+        "customer_support": {
+          "precision": 1.0,
+          "recall": 0.784,
+          "f1": 0.879,
+          "support": 139
+        },
+        "refunds_returns": {
+          "precision": 1.0,
+          "recall": 0.81,
+          "f1": 0.895,
+          "support": 105
+        },
+        "app_experience": {
+          "precision": 0.992,
+          "recall": 0.676,
+          "f1": 0.804,
+          "support": 179
+        },
+        "payments": {
+          "precision": 0.861,
+          "recall": 0.989,
+          "f1": 0.921,
+          "support": 88
+        }
+      },
+      "aspect_micro": {
+        "precision": 0.956,
+        "recall": 0.823,
+        "f1": 0.884
+      },
+      "aspect_sentiment_accuracy": 0.864,
+      "aspect_sentiment_n": 1509,
+      "overall_macro_f1": 0.703,
+      "overall_accuracy": 0.762,
+      "overall_confusion": {
+        "POSITIVE": {
+          "POSITIVE": 572,
+          "NEUTRAL": 108,
+          "NEGATIVE": 9
+        },
+        "NEUTRAL": {
+          "POSITIVE": 88,
+          "NEUTRAL": 123,
+          "NEGATIVE": 96
+        },
+        "NEGATIVE": {
+          "POSITIVE": 3,
+          "NEUTRAL": 53,
+          "NEGATIVE": 448
+        }
+      }
+    },
+    "baseline": {
+      "per_aspect": {
+        "delivery_speed": {
+          "precision": 0.945,
+          "recall": 0.807,
+          "f1": 0.87,
+          "support": 429
+        },
+        "pricing": {
+          "precision": 1.0,
+          "recall": 0.813,
+          "f1": 0.897,
+          "support": 225
+        },
+        "discounts_offers": {
+          "precision": 1.0,
+          "recall": 0.92,
+          "f1": 0.958,
+          "support": 150
+        },
+        "product_availability": {
+          "precision": 0.912,
+          "recall": 0.756,
+          "f1": 0.827,
+          "support": 193
+        },
+        "product_quality": {
+          "precision": 0.95,
+          "recall": 0.924,
+          "f1": 0.937,
+          "support": 184
+        },
+        "order_accuracy": {
+          "precision": 0.974,
+          "recall": 0.789,
+          "f1": 0.872,
+          "support": 142
+        },
+        "customer_support": {
+          "precision": 1.0,
+          "recall": 0.784,
+          "f1": 0.879,
+          "support": 139
+        },
+        "refunds_returns": {
+          "precision": 1.0,
+          "recall": 0.81,
+          "f1": 0.895,
+          "support": 105
+        },
+        "app_experience": {
+          "precision": 1.0,
+          "recall": 0.676,
+          "f1": 0.807,
+          "support": 179
+        },
+        "payments": {
+          "precision": 0.861,
+          "recall": 0.989,
+          "f1": 0.921,
+          "support": 88
+        }
+      },
+      "aspect_micro": {
+        "precision": 0.961,
+        "recall": 0.816,
+        "f1": 0.883
+      },
+      "aspect_sentiment_accuracy": 0.49,
+      "aspect_sentiment_n": 1497,
+      "overall_macro_f1": 0.488,
+      "overall_accuracy": 0.527,
+      "overall_confusion": {
+        "POSITIVE": {
+          "POSITIVE": 454,
+          "NEUTRAL": 182,
+          "NEGATIVE": 53
+        },
+        "NEUTRAL": {
+          "POSITIVE": 163,
+          "NEUTRAL": 89,
+          "NEGATIVE": 55
+        },
+        "NEGATIVE": {
+          "POSITIVE": 85,
+          "NEUTRAL": 172,
+          "NEGATIVE": 247
+        }
+      }
+    }
+  }
+}

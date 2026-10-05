@@ -1,0 +1,614 @@
+// RivalSense database schema — the single source of truth for every table.
+// Prisma owns migrations. The Python pipeline reads/writes the same tables with
+// psycopg (snake_case table/column names below), checked by a pytest contract test.
+// See docs/DATA_MODEL.md for a one-line explanation of each model.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../apps/web/server/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum WorkspaceRole {
+  OWNER
+  MEMBER
+}
+
+enum MarketDataKind {
+  DEMO_SYNTHETIC // fictional companies, generated reviews
+  LIVE // real public reviews collected by a provider
+}
+
+enum CompetitorStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum DataSourceKind {
+  DEMO
+  CSV
+  GOOGLE_PLAY
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum ReviewStatus {
+  PENDING // not yet processed by the pipeline
+  ANALYSED // full English pipeline ran
+  NOT_ANALYSED_LANGUAGE // stored and counted, but language not supported yet
+  DUPLICATE // removed by dedupe (hash of normalised text + source + date)
+  SPAM // removed by cleaning rules
+}
+
+enum DetectionLayer {
+  LEXICON
+  EMBEDDING
+  BOTH
+}
+
+enum RunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum PeriodGrain {
+  WEEK
+  MONTH
+}
+
+enum ConfidenceLabel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum FindingKind {
+  TIME_WINDOW // emerging issue: recent window vs previous window
+  APP_VERSION // drop after a specific app version
+}
+
+enum InsightType {
+  OBSERVATION
+  INTERPRETATION
+  OPPORTUNITY
+  RECOMMENDATION
+}
+
+enum InsightKind {
+  EMERGING_ISSUE
+  VERSION_DROP
+  COMPETITIVE_GAP
+  MARKET_WEAKNESS
+  STRENGTH
+  WEAKNESS
+  TOPIC
+}
+
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ReportStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
+// ───────────────────── Auth (Better Auth tables) ─────────────────────
+
+model User {
+  id            String       @id
+  name          String
+  email         String       @unique
+  emailVerified Boolean      @default(false) @map("email_verified")
+  image         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  reports       Report[]
+  shareLinks    ShareLink[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt @map("last_request")
+
+  @@map("rate_limit")
+}
+
+// ───────────────────── Tenancy ─────────────────────
+
+model Workspace {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  slug        String       @unique
+  isDemo      Boolean      @default(false) @map("is_demo") // demo workspace is read-only for everyone
+  createdAt   DateTime     @default(now()) @map("created_at")
+  memberships Membership[]
+  markets     Market[]
+  reports     Report[]
+
+  @@map("workspace")
+}
+
+model Membership {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id") @db.Uuid
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@map("membership")
+}
+
+// ───────────────────── Market configuration ─────────────────────
+
+model Market {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId      String            @map("workspace_id") @db.Uuid
+  name             String
+  slug             String
+  description      String?
+  dataKind         MarketDataKind    @map("data_kind")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  competitors      Competitor[]
+  aspectCategories AspectCategory[]
+  reviews          Review[]
+  analysisRuns     AnalysisRun[]
+  aspectMentions   AspectMention[]
+  aspectAggregates AspectAggregate[]
+  emergingIssues   EmergingIssue[]
+  topics           Topic[]
+  insights         Insight[]
+  reports          Report[]
+
+  @@unique([workspaceId, slug])
+  @@map("market")
+}
+
+model AspectCategory {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marketId     String            @map("market_id") @db.Uuid
+  key          String // e.g. delivery_speed
+  label        String // e.g. Delivery speed
+  description  String // natural-language description, embedded for similarity matching
+  seedKeywords String[]          @map("seed_keywords")
+  sortOrder    Int               @default(0) @map("sort_order")
+  market       Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  mentions     AspectMention[]
+  aggregates   AspectAggregate[]
+  issues       EmergingIssue[]
+  insights     Insight[]
+
+  @@unique([marketId, key])
+  @@map("aspect_category")
+}
+
+model Competitor {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marketId       String            @map("market_id") @db.Uuid
+  name           String
+  slug           String
+  description    String?
+  status         CompetitorStatus  @default(ACTIVE)
+  colorIndex     Int               @default(0) @map("color_index") // stable chart colour slot
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  market         Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  dataSources    DataSource[]
+  reviews        Review[]
+  aspectMentions AspectMention[]
+  aggregates     AspectAggregate[]
+  issues         EmergingIssue[]
+  insights       Insight[]
+
+  @@unique([marketId, slug])
+  @@map("competitor")
+}
+
+model DataSource {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  competitorId    String         @map("competitor_id") @db.Uuid
+  kind            DataSourceKind
+  label           String // e.g. "Demo dataset — synthetic", "Google Play (public reviews)"
+  externalId      String?        @map("external_id") // e.g. Play Store package id
+  config          Json           @default("{}")
+  lastCollectedAt DateTime?      @map("last_collected_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  competitor      Competitor     @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  reviews         Review[]
+
+  @@unique([competitorId, kind])
+  @@map("data_source")
+}
+
+// ───────────────────── Raw reviews ─────────────────────
+// Only what analysis needs. No reviewer names, profile images, or user IDs.
+
+model Review {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marketId     String            @map("market_id") @db.Uuid
+  competitorId String            @map("competitor_id") @db.Uuid
+  dataSourceId String            @map("data_source_id") @db.Uuid
+  externalKey  String            @map("external_key") // provider-stable key for idempotent ingest (hashed for live sources)
+  text         String
+  cleanText    String?           @map("clean_text")
+  rating       Int // 1–5 stars, as given by the reviewer
+  reviewedAt   DateTime          @map("reviewed_at")
+  appVersion   String?           @map("app_version")
+  language     String? // ISO code, "hinglish", or "und"
+  status       ReviewStatus      @default(PENDING)
+  contentHash  String?           @map("content_hash") // hash(normalised text + source + date) for dedupe
+  collectedAt  DateTime          @default(now()) @map("collected_at")
+  market       Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  competitor   Competitor        @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  dataSource   DataSource        @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  sentiment    ReviewSentiment?
+  clauses      ReviewClause[]
+  mentions     AspectMention[]
+  topics       TopicAssignment[]
+  evidenceFor  InsightEvidence[]
+
+  @@unique([dataSourceId, externalKey])
+  // Review explorer: newest-first per market, with common filters; cursor = (reviewed_at, id)
+  @@index([marketId, reviewedAt(sort: Desc), id])
+  @@index([competitorId, reviewedAt(sort: Desc)])
+  @@index([marketId, rating])
+  @@index([marketId, language])
+  @@index([marketId, status])
+  @@map("review")
+}
+
+// ───────────────────── Pipeline output ─────────────────────
+
+model AnalysisRun {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marketId    String            @map("market_id") @db.Uuid
+  status      RunStatus         @default(RUNNING)
+  provider    String // demo | csv | google_play
+  startedAt   DateTime          @default(now()) @map("started_at")
+  finishedAt  DateTime?         @map("finished_at")
+  models      Json              @default("{}") // model names + versions used
+  counts      Json              @default("{}") // per-step counts
+  parameters  Json              @default("{}") // thresholds used (min sample, windows, ...)
+  evalSummary Json?             @map("eval_summary") // latest evaluation scores, if available
+  error       String?
+  market      Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  sentiments  ReviewSentiment[]
+  clauses     ReviewClause[]
+  mentions    AspectMention[]
+  aggregates  AspectAggregate[]
+  issues      EmergingIssue[]
+  topics      Topic[]
+  insights    Insight[]
+  reports     Report[]
+
+  @@index([marketId, startedAt(sort: Desc)])
+  @@map("analysis_run")
+}
+
+model ReviewSentiment {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId      String      @unique @map("review_id") @db.Uuid
+  analysisRunId String      @map("analysis_run_id") @db.Uuid
+  marketId      String      @map("market_id") @db.Uuid // denormalised for fast aggregation
+  competitorId  String      @map("competitor_id") @db.Uuid
+  reviewedAt    DateTime    @map("reviewed_at")
+  label         Sentiment
+  confidence    Float
+  positive      Float // class probabilities
+  neutral       Float
+  negative      Float
+  review        Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  analysisRun   AnalysisRun @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+
+  @@index([marketId, reviewedAt])
+  @@index([competitorId, reviewedAt])
+  @@map("review_sentiment")
+}
+
+model ReviewClause {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId      String            @map("review_id") @db.Uuid
+  analysisRunId String            @map("analysis_run_id") @db.Uuid
+  position      Int
+  text          String
+  charStart     Int               @map("char_start") // offsets into review.text, for highlighting
+  charEnd       Int               @map("char_end")
+  sentiment     Sentiment?
+  confidence    Float?
+  review        Review            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  analysisRun   AnalysisRun       @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  mentions      AspectMention[]
+  topics        TopicAssignment[]
+
+  @@unique([reviewId, position])
+  @@map("review_clause")
+}
+
+model AspectMention {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reviewId         String         @map("review_id") @db.Uuid
+  clauseId         String?        @map("clause_id") @db.Uuid
+  analysisRunId    String         @map("analysis_run_id") @db.Uuid
+  aspectCategoryId String         @map("aspect_category_id") @db.Uuid
+  marketId         String         @map("market_id") @db.Uuid
+  competitorId     String         @map("competitor_id") @db.Uuid
+  reviewedAt       DateTime       @map("reviewed_at")
+  sentiment        Sentiment
+  confidence       Float
+  layer            DetectionLayer
+  matchedText      String?        @map("matched_text")
+  matchStart       Int?           @map("match_start") // offsets into review.text
+  matchEnd         Int?           @map("match_end")
+  similarity       Float? // embedding similarity when the embedding layer fired
+  review           Review         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  clause           ReviewClause?  @relation(fields: [clauseId], references: [id], onDelete: Cascade)
+  analysisRun      AnalysisRun    @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  aspectCategory   AspectCategory @relation(fields: [aspectCategoryId], references: [id], onDelete: Cascade)
+  market           Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  competitor       Competitor     @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, aspectCategoryId])
+  @@index([marketId, reviewedAt])
+  @@index([competitorId, aspectCategoryId, reviewedAt])
+  @@index([aspectCategoryId, sentiment])
+  @@map("aspect_mention")
+}
+
+model AspectAggregate {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId    String           @map("analysis_run_id") @db.Uuid
+  marketId         String           @map("market_id") @db.Uuid
+  competitorId     String           @map("competitor_id") @db.Uuid
+  aspectCategoryId String           @map("aspect_category_id") @db.Uuid
+  grain            PeriodGrain
+  periodStart      DateTime         @map("period_start") @db.Date
+  periodEnd        DateTime         @map("period_end") @db.Date // exclusive
+  mentions         Int
+  positive         Int
+  neutral          Int
+  negative         Int
+  reviewCount      Int              @map("review_count") // analysed reviews for the competitor in the period
+  score            Float? // null when mentions < minimum sample
+  posLow           Float            @map("pos_low") // 95% Wilson interval, positive share
+  posHigh          Float            @map("pos_high")
+  negLow           Float            @map("neg_low") // 95% Wilson interval, negative share
+  negHigh          Float            @map("neg_high")
+  confidence       ConfidenceLabel?
+  shareOfVoice     Float            @map("share_of_voice")
+  analysisRun      AnalysisRun      @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  market           Market           @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  competitor       Competitor       @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  aspectCategory   AspectCategory   @relation(fields: [aspectCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([analysisRunId, competitorId, aspectCategoryId, grain, periodStart])
+  @@index([marketId, grain, periodStart])
+  @@map("aspect_aggregate")
+}
+
+// Trend / emerging-issue finding (two-proportion z-test)
+model EmergingIssue {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId     String         @map("analysis_run_id") @db.Uuid
+  marketId          String         @map("market_id") @db.Uuid
+  competitorId      String         @map("competitor_id") @db.Uuid
+  aspectCategoryId  String         @map("aspect_category_id") @db.Uuid
+  kind              FindingKind
+  appVersion        String?        @map("app_version") // for APP_VERSION findings
+  recentStart       DateTime       @map("recent_start")
+  recentEnd         DateTime       @map("recent_end")
+  prevStart         DateTime       @map("prev_start")
+  prevEnd           DateTime       @map("prev_end")
+  recentNegative    Int            @map("recent_negative")
+  recentTotal       Int            @map("recent_total")
+  prevNegative      Int            @map("prev_negative")
+  prevTotal         Int            @map("prev_total")
+  recentShare       Float          @map("recent_share")
+  prevShare         Float          @map("prev_share")
+  relativeIncrease  Float          @map("relative_increase")
+  zStatistic        Float          @map("z_statistic")
+  pValue            Float          @map("p_value")
+  evidenceReviewIds String[]       @map("evidence_review_ids")
+  detectedAt        DateTime       @default(now()) @map("detected_at")
+  analysisRun       AnalysisRun    @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  market            Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  competitor        Competitor     @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  aspectCategory    AspectCategory @relation(fields: [aspectCategoryId], references: [id], onDelete: Cascade)
+
+  @@index([marketId, analysisRunId])
+  @@map("emerging_issue")
+}
+
+// Discovered complaint theme from clustering negative clauses
+model Topic {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId    String            @map("analysis_run_id") @db.Uuid
+  marketId         String            @map("market_id") @db.Uuid
+  label            String
+  keywords         String[]
+  size             Int
+  isUncategorised  Boolean           @default(true) @map("is_uncategorised") // false when it overlaps a fixed aspect
+  nearestAspectKey String?           @map("nearest_aspect_key")
+  exampleReviewIds String[]          @map("example_review_ids")
+  analysisRun      AnalysisRun       @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  market           Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  assignments      TopicAssignment[]
+
+  @@index([marketId, analysisRunId])
+  @@map("topic")
+}
+
+model TopicAssignment {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  topicId      String        @map("topic_id") @db.Uuid
+  reviewId     String        @map("review_id") @db.Uuid
+  clauseId     String?       @map("clause_id") @db.Uuid
+  competitorId String        @map("competitor_id") @db.Uuid
+  reviewedAt   DateTime      @map("reviewed_at")
+  topic        Topic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  review       Review        @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  clause       ReviewClause? @relation(fields: [clauseId], references: [id], onDelete: Cascade)
+
+  @@index([topicId, reviewedAt])
+  @@map("topic_assignment")
+}
+
+model Insight {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId          String            @map("analysis_run_id") @db.Uuid
+  marketId               String            @map("market_id") @db.Uuid
+  competitorId           String?           @map("competitor_id") @db.Uuid
+  aspectCategoryId       String?           @map("aspect_category_id") @db.Uuid
+  parentId               String?           @map("parent_id") @db.Uuid // interpretation/recommendation → its observation
+  type                   InsightType
+  kind                   InsightKind
+  title                  String
+  statement              String // deterministic template text
+  rewrittenStatement     String?           @map("rewritten_statement") // optional LLM rewrite (validated)
+  writtenBy              String            @default("template") @map("written_by") // template | anthropic:<model> | openai:<model>
+  facts                  Json // the computed facts the text was built from
+  sampleSize             Int               @map("sample_size")
+  dateFrom               DateTime          @map("date_from")
+  dateTo                 DateTime          @map("date_to")
+  sources                String[]
+  confidence             ConfidenceLabel
+  impact                 ImpactLevel
+  priority               Float             @default(0)
+  suggestedInvestigation String?           @map("suggested_investigation")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  analysisRun            AnalysisRun       @relation(fields: [analysisRunId], references: [id], onDelete: Cascade)
+  market                 Market            @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  competitor             Competitor?       @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  aspectCategory         AspectCategory?   @relation(fields: [aspectCategoryId], references: [id], onDelete: Cascade)
+  parent                 Insight?          @relation("InsightChain", fields: [parentId], references: [id], onDelete: Cascade)
+  children               Insight[]         @relation("InsightChain")
+  evidence               InsightEvidence[]
+
+  @@index([marketId, type])
+  @@index([competitorId])
+  @@map("insight")
+}
+
+model InsightEvidence {
+  insightId String  @map("insight_id") @db.Uuid
+  reviewId  String  @map("review_id") @db.Uuid
+  insight   Insight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  review    Review  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@id([insightId, reviewId])
+  @@index([reviewId])
+  @@map("insight_evidence")
+}
+
+// ───────────────────── Reports & sharing ─────────────────────
+
+model Report {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId   String       @map("workspace_id") @db.Uuid
+  marketId      String       @map("market_id") @db.Uuid
+  analysisRunId String?      @map("analysis_run_id") @db.Uuid
+  createdById   String?      @map("created_by_id")
+  title         String
+  status        ReportStatus @default(GENERATING)
+  config        Json // competitors, sections, date range
+  snapshot      Json? // computed content frozen at generation time
+  error         String?
+  createdAt     DateTime     @default(now()) @map("created_at")
+  generatedAt   DateTime?    @map("generated_at")
+  workspace     Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  market        Market       @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  analysisRun   AnalysisRun? @relation(fields: [analysisRunId], references: [id], onDelete: SetNull)
+  createdBy     User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  shareLinks    ShareLink[]
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@map("report")
+}
+
+model ShareLink {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportId       String    @map("report_id") @db.Uuid
+  token          String    @unique // 32 random bytes, base64url
+  createdById    String?   @map("created_by_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  expiresAt      DateTime? @map("expires_at")
+  revokedAt      DateTime? @map("revoked_at")
+  lastAccessedAt DateTime? @map("last_accessed_at")
+  accessCount    Int       @default(0) @map("access_count")
+  report         Report    @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  createdBy      User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([reportId])
+  @@map("share_link")
+}

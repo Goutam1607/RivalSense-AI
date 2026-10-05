@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# local database + caches
+.data/
+.cache/
+services/pipeline/.cache/
+services/pipeline/data/generated/
+hf_cache/
+
+# test output
+playwright-report/
+test-results/
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# old prototype (superseded; kept locally only — contains its own .env and venv)
+/backend/
+/frontend/
+
+# generated Prisma client (npm install runs prisma generate)
+apps/web/server/db/generated/

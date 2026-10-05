@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env: { POSTGRES_USER: rivalsense, POSTGRES_PASSWORD: rivalsense, POSTGRES_DB: rivalsense }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U rivalsense" --health-interval 2s --health-retries 30
+    env:
+      DATABASE_URL: postgresql://rivalsense:rivalsense@localhost:5432/rivalsense
+      BETTER_AUTH_SECRET: ci-secret-ci-secret-ci-secret-ci-secret-1234
+      BETTER_AUTH_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: touch .env
+      - run: npx prisma migrate deploy
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+
+  pipeline:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: services/pipeline } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest   # DB-dependent tests skip automatically without a database
