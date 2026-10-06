@@ -43,3 +43,7 @@ Thumbs.db
 
 # generated Prisma client (npm install runs prisma generate)
 apps/web/server/db/generated/
+
+# Local eval scratch files
+services/pipeline/eval/eval_log.txt
+services/pipeline/eval/*.bak.csv

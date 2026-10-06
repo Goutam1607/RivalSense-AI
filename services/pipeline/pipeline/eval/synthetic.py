@@ -2,7 +2,7 @@
 
 This is NOT the real evaluation: the demo reviews come from our own templates, and the
 lexicon was written knowing the same vocabulary, so scores here are optimistic (circular).
-The honest evaluation uses hand-labelled real reviews (eval/gold.csv) — see evaluate.py.
+The honest evaluation uses labelled real reviews (eval/gold.csv) — see evaluate.py.
 """
 
 from __future__ import annotations

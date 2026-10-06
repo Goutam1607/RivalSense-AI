@@ -54,9 +54,9 @@ export function evaluationLines(s: ReportSnapshot): string[] {
   const out: string[] = [];
   const gold = ev?.gold as Record<string, number> | undefined;
   if (gold) {
-    out.push(`Gold set (hand-labelled real reviews, n = ${gold.n}): aspect detection micro-F1 ${Number(gold.aspect_micro_f1).toFixed(2)}, aspect sentiment accuracy ${Number(gold.aspect_sentiment_accuracy).toFixed(2)}, overall sentiment macro-F1 ${Number(gold.overall_macro_f1).toFixed(2)} (baseline lexicon + VADER: ${Number(gold.baseline_overall_macro_f1).toFixed(2)}).`);
+    out.push(`Gold set (real reviews, AI-assisted labels, human-verified, n = ${gold.n}): aspect detection micro-F1 ${Number(gold.aspect_micro_f1).toFixed(2)}, aspect sentiment accuracy ${Number(gold.aspect_sentiment_accuracy).toFixed(2)}, overall sentiment macro-F1 ${Number(gold.overall_macro_f1).toFixed(2)} (baseline lexicon + VADER: ${Number(gold.baseline_overall_macro_f1).toFixed(2)}).`);
   } else {
-    out.push("Gold-set evaluation on hand-labelled real reviews: pending (see docs/EVALUATION.md).");
+    out.push("Gold-set evaluation on labelled real reviews: pending (see docs/EVALUATION.md).");
   }
   const syn = ev?.synthetic_sanity as { micro?: { f1: number; precision: number; recall: number }; aspect_sentiment_accuracy?: number; overall_sentiment_macro_f1?: number } | undefined;
   if (syn?.micro) {

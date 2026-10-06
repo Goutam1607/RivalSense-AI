@@ -230,8 +230,8 @@ export default async function Landing() {
                 <h3 className="text-md font-semibold">Model evaluation</h3>
                 <p className="mt-2 text-sm text-fg-muted">
                   {demo?.evaluation?.gold
-                    ? `On ${demo.evaluation.gold.n} hand-labelled real reviews: aspect F1 ${demo.evaluation.gold.aspect_micro_f1}, sentiment macro-F1 ${demo.evaluation.gold.overall_macro_f1} (keyword + VADER baseline ${demo.evaluation.gold.baseline_overall_macro_f1}).`
-                    : "Evaluated against a hand-labelled gold set of real reviews and a keyword + VADER baseline; results are published with each release."}{" "}
+                    ? `On ${demo.evaluation.gold.n} labelled real reviews (AI-assisted labels, human-verified): aspect F1 ${demo.evaluation.gold.aspect_micro_f1}, sentiment macro-F1 ${demo.evaluation.gold.overall_macro_f1} (keyword + VADER baseline ${demo.evaluation.gold.baseline_overall_macro_f1}).`
+                    : "Evaluated against a labelled gold set of real reviews and a keyword + VADER baseline; results are published with each release."}{" "}
                   Non-English reviews are counted but not yet analysed.
                 </p>
               </div>

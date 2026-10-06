@@ -51,11 +51,11 @@ emoji, Hinglish, duplicates and spam, plus a hidden label file. It plants known 
 * **Why do you feed ABSA the sentence and not the clause?** Testing showed splitting “the refund was processed | but I
   never got the money” left a positive-sounding clause; the ABSA model is trained to separate aspects in full sentences.
 * **Why is the synthetic score only a sanity check?** The test reviews came from my own templates and the lexicon shares
-  their vocabulary, so it is circular — the real test is hand-labelled real reviews.
+  their vocabulary, so it is circular — the real test is labelled real reviews (the gold set).
 
 ## Stage 4 — Real data and evaluation
 **What and why.** A Google Play provider collects a small, polite sample of public reviews storing only text, rating,
-date and version; a stratified sample is hand-labelled to measure precision, recall and F1 against a baseline.
+date and version; a stratified sample is labelled (AI-assisted, blind to model output) to measure precision, recall and F1 against a baseline.
 
 * **Why not pre-fill labels with model predictions?** Anchoring: labellers tend to accept what they see, which would make
   the model look better than it is. Blank labels keep the gold set independent.
@@ -127,3 +127,24 @@ server-side PDF, and can be shared via a revocable token.
   scan of the client bundle for secrets.
 * **How do you deploy a Python pipeline with a Vercel app?** The web app goes to Vercel and the database to Neon; the
   pipeline runs on a laptop or a manual GitHub Actions job against the production database URL.
+
+## Stage 4 (completed) — Gold-set evaluation results
+**What and why.** 200 real Google Play reviews were labelled with AI assistance (the annotator saw only the review text
+and star rating, never the model's output), then checked by hand. The pipeline and a keyword + VADER baseline are
+scored against these labels, so the accuracy numbers come from real reviews, not from our own templates.
+
+* **How were the gold labels made?** AI-assisted labelling, then human verification. The annotator never saw model
+  predictions, which avoids anchoring. There was one annotator, so I can't report inter-annotator agreement. That's a
+  known limitation.
+* **Is the model better than the baseline?** For sentiment, clearly: overall macro-F1 0.76 vs 0.60, aspect sentiment
+  accuracy 85% vs 60%. For aspect *detection*, only slightly: micro-F1 0.68 vs 0.66.
+* **What is the weakest part?** Aspect recall (0.59). Precision is 0.80, so when it tags an aspect it is usually right,
+  but it misses many. On 7 of 10 aspects the model scores the same as the keyword-only baseline, so the embedding layer
+  rarely adds anything on real text.
+* **What would you improve next?** Tune the embedding-similarity threshold for recall, add real-world phrasings and
+  misspellings ("delevery", "sarvice") to the lexicon, and handle implicit complaints ("still waiting for my refund")
+  that the ABSA model labels neutral.
+* **Why not quote the synthetic score (0.88)?** It is circular: those reviews come from my own templates.
+
+**Numbers to remember:** gold set n = 200 real reviews · aspect micro-F1 0.68 (P 0.80, R 0.59; baseline 0.66) ·
+aspect sentiment accuracy 0.85 (baseline 0.60) · overall sentiment macro-F1 0.76 (baseline 0.60), accuracy 83%.

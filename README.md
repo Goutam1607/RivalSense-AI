@@ -34,10 +34,12 @@ Analysis runs offline in batches (ADR 001); the web app only reads precomputed r
 |---|---:|---:|---:|
 | Synthetic demo labels (n = 1,500, optimistic) — model | 0.88 | 0.86 | 0.70 |
 | Same, baseline (lexicon + VADER) | 0.88 | 0.49 | 0.49 |
-| Hand-labelled real reviews (gold set) | pending — see [docs/EVALUATION.md](docs/EVALUATION.md) | | |
+| Real reviews, gold set (n = 200, AI-assisted labels, human-verified) — model | 0.68 | 0.85 | 0.76 |
+| Same, baseline (lexicon + VADER) | 0.66 | 0.60 | 0.60 |
 
 The transformer models clearly beat VADER on sentiment. Aspect *detection* does not beat the baseline on synthetic
-data because both share the same lexicon there — the gold set of real reviews is the real test.
+data because both share the same lexicon there. On real reviews it is only slightly better (0.68 vs 0.66): precision is
+good (0.80) but recall is low (0.59). See [docs/EVALUATION.md](docs/EVALUATION.md) for how the gold set was labelled.
 
 ## Getting started (Windows, PowerShell)
 
@@ -73,7 +75,7 @@ Demo login (also used by the button): `demo@rivalsense.dev` / `demo-password-123
 | `npm run seed` | Load or re-sync the demo market (idempotent) |
 | `python -m pipeline run --provider demo\|csv\|google_play\|db` | Analysis pipeline (from `services/pipeline`) |
 | `python -m pipeline collect --cap 300` | Collect real Google Play reviews (live market) |
-| `python -m pipeline sample-gold` → `label` → `eval` | Build and score the hand-labelled gold set |
+| `python -m pipeline sample-gold` → `label` → `eval` | Build and score the labelled gold set |
 | `pytest` | Pipeline tests (from `services/pipeline`) |
 
 **Data collection notice:** the Google Play provider collects only public reviews, with a small volume cap and delays.
